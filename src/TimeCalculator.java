@@ -16,6 +16,7 @@ public class TimeCalculator {
 
     private JPanel agePanel;
     private JPanel timePanel;
+    private JPanel datePanel;
 
     private JTextField birthdateField;
     private JLabel ageLabel;
@@ -23,6 +24,10 @@ public class TimeCalculator {
     private JTextField timeField1;
     private JTextField timeField2;
     private JLabel timeDifferenceLabel;
+
+    private JTextField dateField1;
+    private JTextField dateField2;
+    private JLabel dateDifferenceLabel;
 
     private final java.time.format.DateTimeFormatter dateFormatter = java.time.format.DateTimeFormatter
             .ofPattern("yyyy-MM-dd");
@@ -32,11 +37,12 @@ public class TimeCalculator {
     public TimeCalculator() {
         frame = new JFrame("Time Calculator");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(500, 300);
-        frame.setLayout(new GridLayout(2, 1));
+        frame.setSize(600, 400);
+        frame.setLayout(new GridLayout(3, 1));
 
         agePanel = new JPanel(new GridLayout(3, 2));
         timePanel = new JPanel(new GridLayout(3, 2));
+        datePanel = new JPanel(new GridLayout(3, 2));
 
         agePanel.add(new JLabel("Enter Birthdate (YYYY-MM-DD):"));
         birthdateField = new JTextField();
@@ -62,8 +68,23 @@ public class TimeCalculator {
         timeDifferenceLabel = new JLabel(" ");
         timePanel.add(timeDifferenceLabel);
 
+        datePanel.add(new JLabel("Enter Date 1 (YYYY-MM-DD):"));
+        dateField1 = new JTextField();
+        datePanel.add(dateField1);
+
+        datePanel.add(new JLabel("Enter Date 2 (YYYY-MM-DD):"));
+        dateField2 = new JTextField();
+        datePanel.add(dateField2);
+
+        JButton calculateDateButton = new JButton("Calculate Date Difference");
+        datePanel.add(calculateDateButton);
+
+        dateDifferenceLabel = new JLabel(" ");
+        datePanel.add(dateDifferenceLabel);
+
         frame.add(agePanel);
         frame.add(timePanel);
+        frame.add(datePanel);
 
         calculateAgeButton.addActionListener(new ActionListener() {
             @Override
@@ -76,6 +97,13 @@ public class TimeCalculator {
             @Override
             public void actionPerformed(ActionEvent e) {
                 calculateTimeDifference();
+            }
+        });
+
+        calculateDateButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                calculateDateDifference();
             }
         });
 
@@ -121,6 +149,31 @@ public class TimeCalculator {
             timeDifferenceLabel.setText("Invalid time format. Please use HH:MM:SS.");
         } catch (Exception e) {
             timeDifferenceLabel.setText("An error occurred while calculating time difference.");
+        }
+    }
+
+    private void calculateDateDifference() {
+        String date1Text = dateField1.getText();
+        String date2Text = dateField2.getText();
+        try {
+            LocalDate date1 = LocalDate.parse(date1Text, dateFormatter);
+            LocalDate date2 = LocalDate.parse(date2Text, dateFormatter);
+
+            Period period = Period.between(date1, date2);
+
+            if (date1.isAfter(date2)) {
+                dateDifferenceLabel.setText("Date 1 cannot be after Date 2.");
+            } else {
+                long days = period.getDays();
+                long months = period.getMonths();
+                long weeks = days / 7;
+                dateDifferenceLabel.setText(
+                        String.format("Date Difference: %d months, %d weeks, %d days", months, weeks, days % 7));
+            }
+        } catch (DateTimeParseException e) {
+            dateDifferenceLabel.setText("Invalid date format. Please use YYYY-MM-DD.");
+        } catch (Exception e) {
+            dateDifferenceLabel.setText("An error occurred while calculating date difference.");
         }
     }
 
