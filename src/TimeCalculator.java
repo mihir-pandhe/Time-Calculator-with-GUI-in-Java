@@ -2,187 +2,227 @@ package src;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.time.LocalDate;
-import java.time.Period;
+import java.time.*;
+import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.time.LocalTime;
-import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 
 public class TimeCalculator {
 
     private JFrame frame;
-
-    private JPanel agePanel;
-    private JPanel timePanel;
-    private JPanel datePanel;
-
-    private JTextField birthdateField;
-    private JLabel ageLabel;
-
-    private JTextField timeField1;
-    private JTextField timeField2;
-    private JLabel timeDifferenceLabel;
-
-    private JTextField dateField1;
-    private JTextField dateField2;
-    private JLabel dateDifferenceLabel;
-
-    private final java.time.format.DateTimeFormatter dateFormatter = java.time.format.DateTimeFormatter
-            .ofPattern("yyyy-MM-dd");
-    private final java.time.format.DateTimeFormatter timeFormatter = java.time.format.DateTimeFormatter
-            .ofPattern("HH:mm:ss");
+    private CardLayout cardLayout;
+    private JPanel mainPanel;
 
     public TimeCalculator() {
         frame = new JFrame("Time Calculator");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(600, 400);
-        frame.setLayout(new GridLayout(3, 1));
+        frame.setSize(500, 400);
+        cardLayout = new CardLayout();
+        mainPanel = new JPanel(cardLayout);
 
-        agePanel = new JPanel(new GridLayout(3, 2));
-        timePanel = new JPanel(new GridLayout(3, 2));
-        datePanel = new JPanel(new GridLayout(3, 2));
+        JPanel agePanel = createAgePanel();
+        JPanel timeDiffPanel = createTimeDiffPanel();
+        JPanel dateDiffPanel = createDateDiffPanel();
+        JPanel timeZonePanel = createTimeZonePanel();
+        JPanel reminderPanel = createReminderPanel();
 
-        agePanel.add(new JLabel("Enter Birthdate (YYYY-MM-DD):"));
-        birthdateField = new JTextField();
-        agePanel.add(birthdateField);
+        mainPanel.add(agePanel, "Age Calculation");
+        mainPanel.add(timeDiffPanel, "Time Difference Calculation");
+        mainPanel.add(dateDiffPanel, "Date Difference Calculation");
+        mainPanel.add(timeZonePanel, "Time Zone Calculation");
+        mainPanel.add(reminderPanel, "Reminder Calculation");
 
-        JButton calculateAgeButton = new JButton("Calculate Age");
-        agePanel.add(calculateAgeButton);
+        JPanel navigationPanel = new JPanel(new GridLayout(1, 5));
+        JButton ageButton = new JButton("Age Calculation");
+        JButton timeDiffButton = new JButton("Time Difference");
+        JButton dateDiffButton = new JButton("Date Difference");
+        JButton timeZoneButton = new JButton("Time Zone");
+        JButton reminderButton = new JButton("Reminder");
 
-        ageLabel = new JLabel(" ");
-        agePanel.add(ageLabel);
+        ageButton.addActionListener(e -> cardLayout.show(mainPanel, "Age Calculation"));
+        timeDiffButton.addActionListener(e -> cardLayout.show(mainPanel, "Time Difference Calculation"));
+        dateDiffButton.addActionListener(e -> cardLayout.show(mainPanel, "Date Difference Calculation"));
+        timeZoneButton.addActionListener(e -> cardLayout.show(mainPanel, "Time Zone Calculation"));
+        reminderButton.addActionListener(e -> cardLayout.show(mainPanel, "Reminder Calculation"));
 
-        timePanel.add(new JLabel("Enter Time 1 (HH:MM:SS):"));
-        timeField1 = new JTextField();
-        timePanel.add(timeField1);
+        navigationPanel.add(ageButton);
+        navigationPanel.add(timeDiffButton);
+        navigationPanel.add(dateDiffButton);
+        navigationPanel.add(timeZoneButton);
+        navigationPanel.add(reminderButton);
 
-        timePanel.add(new JLabel("Enter Time 2 (HH:MM:SS):"));
-        timeField2 = new JTextField();
-        timePanel.add(timeField2);
-
-        JButton calculateTimeButton = new JButton("Calculate Time Difference");
-        timePanel.add(calculateTimeButton);
-
-        timeDifferenceLabel = new JLabel(" ");
-        timePanel.add(timeDifferenceLabel);
-
-        datePanel.add(new JLabel("Enter Date 1 (YYYY-MM-DD):"));
-        dateField1 = new JTextField();
-        datePanel.add(dateField1);
-
-        datePanel.add(new JLabel("Enter Date 2 (YYYY-MM-DD):"));
-        dateField2 = new JTextField();
-        datePanel.add(dateField2);
-
-        JButton calculateDateButton = new JButton("Calculate Date Difference");
-        datePanel.add(calculateDateButton);
-
-        dateDifferenceLabel = new JLabel(" ");
-        datePanel.add(dateDifferenceLabel);
-
-        frame.add(agePanel);
-        frame.add(timePanel);
-        frame.add(datePanel);
-
-        calculateAgeButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                calculateAge();
-            }
-        });
-
-        calculateTimeButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                calculateTimeDifference();
-            }
-        });
-
-        calculateDateButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                calculateDateDifference();
-            }
-        });
+        frame.setLayout(new BorderLayout());
+        frame.add(navigationPanel, BorderLayout.NORTH);
+        frame.add(mainPanel, BorderLayout.CENTER);
 
         frame.setVisible(true);
     }
 
-    private void calculateAge() {
-        String birthdateText = birthdateField.getText();
-        try {
-            LocalDate birthdate = LocalDate.parse(birthdateText, dateFormatter);
-            LocalDate today = LocalDate.now();
+    private JPanel createAgePanel() {
+        JPanel panel = new JPanel(new GridLayout(3, 2));
+        JLabel dateLabel = new JLabel("Enter Birthdate (YYYY-MM-DD):");
+        JTextField dateField = new JTextField();
+        JLabel resultLabel = new JLabel("Age: ");
 
-            Period period = Period.between(birthdate, today);
-
-            if (birthdate.isAfter(today)) {
-                ageLabel.setText("Birthdate cannot be in the future.");
-            } else {
-                ageLabel.setText(String.format("Age: %d years, %d months, %d days",
-                        period.getYears(), period.getMonths(), period.getDays()));
+        JButton calculateButton = new JButton("Calculate Age");
+        calculateButton.addActionListener(e -> {
+            try {
+                String inputDate = dateField.getText();
+                LocalDate birthDate = LocalDate.parse(inputDate);
+                LocalDate currentDate = LocalDate.now();
+                if (birthDate.isAfter(currentDate)) {
+                    throw new DateTimeParseException("Invalid date", inputDate, 0);
+                }
+                Period period = Period.between(birthDate, currentDate);
+                resultLabel.setText("Age: " + period.getYears() + " years, " + period.getMonths() + " months, "
+                        + period.getDays() + " days");
+            } catch (DateTimeParseException ex) {
+                JOptionPane.showMessageDialog(frame, "Invalid date format. Please use YYYY-MM-DD.", "Error",
+                        JOptionPane.ERROR_MESSAGE);
             }
-        } catch (DateTimeParseException e) {
-            ageLabel.setText("Invalid date format. Please use YYYY-MM-DD (e.g., 2005-04-17).");
-        } catch (Exception e) {
-            ageLabel.setText("An error occurred while calculating age.");
-        }
+        });
+
+        panel.add(dateLabel);
+        panel.add(dateField);
+        panel.add(calculateButton);
+        panel.add(resultLabel);
+
+        return panel;
     }
 
-    private void calculateTimeDifference() {
-        String time1Text = timeField1.getText();
-        String time2Text = timeField2.getText();
-        try {
-            LocalTime time1 = LocalTime.parse(time1Text, timeFormatter);
-            LocalTime time2 = LocalTime.parse(time2Text, timeFormatter);
+    private JPanel createTimeDiffPanel() {
+        JPanel panel = new JPanel(new GridLayout(4, 2));
+        JLabel timeLabel1 = new JLabel("Enter Time 1 (HH:MM:SS):");
+        JTextField timeField1 = new JTextField();
+        JLabel timeLabel2 = new JLabel("Enter Time 2 (HH:MM:SS):");
+        JTextField timeField2 = new JTextField();
+        JLabel resultLabel = new JLabel("Time Difference: ");
 
-            Duration duration = Duration.between(time1, time2);
-            long hours = duration.toHours();
-            long minutes = duration.toMinutes() % 60;
-            long seconds = duration.getSeconds() % 60;
+        JButton calculateButton = new JButton("Calculate Time Difference");
+        calculateButton.addActionListener(e -> {
+            try {
+                String time1 = timeField1.getText();
+                String time2 = timeField2.getText();
+                DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+                LocalTime localTime1 = LocalTime.parse(time1, timeFormatter);
+                LocalTime localTime2 = LocalTime.parse(time2, timeFormatter);
+                if (localTime1.isAfter(localTime2)) {
+                    throw new DateTimeParseException("Invalid time", time1, 0);
+                }
+                long hours = ChronoUnit.HOURS.between(localTime1, localTime2);
+                long minutes = ChronoUnit.MINUTES.between(localTime1, localTime2) % 60;
+                long seconds = ChronoUnit.SECONDS.between(localTime1, localTime2) % 60;
+                resultLabel.setText(
+                        "Time Difference: " + hours + " hours, " + minutes + " minutes, " + seconds + " seconds");
+            } catch (DateTimeParseException ex) {
+                JOptionPane.showMessageDialog(frame, "Invalid time format. Please use HH:MM:SS.", "Error",
+                        JOptionPane.ERROR_MESSAGE);
+            }
+        });
 
-            timeDifferenceLabel.setText(
-                    String.format("Time Difference: %d hours, %d minutes, %d seconds", hours, minutes, seconds));
-        } catch (DateTimeParseException e) {
-            timeDifferenceLabel.setText("Invalid time format. Please use HH:MM:SS.");
-        } catch (Exception e) {
-            timeDifferenceLabel.setText("An error occurred while calculating time difference.");
-        }
+        panel.add(timeLabel1);
+        panel.add(timeField1);
+        panel.add(timeLabel2);
+        panel.add(timeField2);
+        panel.add(calculateButton);
+        panel.add(resultLabel);
+
+        return panel;
     }
 
-    private void calculateDateDifference() {
-        String date1Text = dateField1.getText();
-        String date2Text = dateField2.getText();
-        try {
-            LocalDate date1 = LocalDate.parse(date1Text, dateFormatter);
-            LocalDate date2 = LocalDate.parse(date2Text, dateFormatter);
+    private JPanel createDateDiffPanel() {
+        JPanel panel = new JPanel(new GridLayout(4, 2));
+        JLabel dateLabel1 = new JLabel("Enter Date 1 (YYYY-MM-DD):");
+        JTextField dateField1 = new JTextField();
+        JLabel dateLabel2 = new JLabel("Enter Date 2 (YYYY-MM-DD):");
+        JTextField dateField2 = new JTextField();
+        JLabel resultLabel = new JLabel("Date Difference: ");
 
-            Period period = Period.between(date1, date2);
-
-            if (date1.isAfter(date2)) {
-                dateDifferenceLabel.setText("Date 1 cannot be after Date 2.");
-            } else {
-                long days = period.getDays();
-                long months = period.getMonths();
-                long weeks = days / 7;
-                dateDifferenceLabel.setText(
-                        String.format("Date Difference: %d months, %d weeks, %d days", months, weeks, days % 7));
+        JButton calculateButton = new JButton("Calculate Date Difference");
+        calculateButton.addActionListener(e -> {
+            try {
+                String date1 = dateField1.getText();
+                String date2 = dateField2.getText();
+                LocalDate startDate = LocalDate.parse(date1);
+                LocalDate endDate = LocalDate.parse(date2);
+                if (startDate.isAfter(endDate)) {
+                    throw new DateTimeParseException("Invalid date", date1, 0);
+                }
+                Period period = Period.between(startDate, endDate);
+                long totalDays = ChronoUnit.DAYS.between(startDate, endDate);
+                resultLabel.setText("Date Difference: " + period.getMonths() + " months, " + period.getDays()
+                        + " days (Total days: " + totalDays + ")");
+            } catch (DateTimeParseException ex) {
+                JOptionPane.showMessageDialog(frame, "Invalid date format. Please use YYYY-MM-DD.", "Error",
+                        JOptionPane.ERROR_MESSAGE);
             }
-        } catch (DateTimeParseException e) {
-            dateDifferenceLabel.setText("Invalid date format. Please use YYYY-MM-DD.");
-        } catch (Exception e) {
-            dateDifferenceLabel.setText("An error occurred while calculating date difference.");
-        }
+        });
+
+        panel.add(dateLabel1);
+        panel.add(dateField1);
+        panel.add(dateLabel2);
+        panel.add(dateField2);
+        panel.add(calculateButton);
+        panel.add(resultLabel);
+
+        return panel;
+    }
+
+    private JPanel createTimeZonePanel() {
+        JPanel panel = new JPanel(new GridLayout(3, 2));
+        JLabel timeZoneLabel = new JLabel("Enter Time Zone (ID):");
+        JTextField timeZoneField = new JTextField();
+        JLabel resultLabel = new JLabel("Current Time: ");
+
+        JButton calculateButton = new JButton("Calculate Time Zone");
+        calculateButton.addActionListener(e -> {
+            try {
+                String timeZone = timeZoneField.getText();
+                ZonedDateTime timeInZone = ZonedDateTime.now(ZoneId.of(timeZone));
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss z");
+                resultLabel.setText("Current Time: " + timeInZone.format(formatter));
+            } catch (DateTimeException ex) {
+                JOptionPane.showMessageDialog(frame, "Invalid time zone ID. Please use a valid time zone ID.", "Error",
+                        JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+        panel.add(timeZoneLabel);
+        panel.add(timeZoneField);
+        panel.add(calculateButton);
+        panel.add(resultLabel);
+
+        return panel;
+    }
+
+    private JPanel createReminderPanel() {
+        JPanel panel = new JPanel(new GridLayout(3, 2));
+        JLabel reminderLabel = new JLabel("Enter Reminder Date (YYYY-MM-DD):");
+        JTextField reminderField = new JTextField();
+        JLabel resultLabel = new JLabel("Days until reminder: ");
+
+        JButton calculateButton = new JButton("Calculate Days Until Reminder");
+        calculateButton.addActionListener(e -> {
+            try {
+                String reminderDate = reminderField.getText();
+                LocalDate reminderLocalDate = LocalDate.parse(reminderDate);
+                long daysUntilReminder = ChronoUnit.DAYS.between(LocalDate.now(), reminderLocalDate);
+                resultLabel.setText("Days until reminder: " + daysUntilReminder);
+            } catch (DateTimeParseException ex) {
+                JOptionPane.showMessageDialog(frame, "Invalid date format. Please use YYYY-MM-DD.", "Error",
+                        JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+        panel.add(reminderLabel);
+        panel.add(reminderField);
+        panel.add(calculateButton);
+        panel.add(resultLabel);
+
+        return panel;
     }
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                new TimeCalculator();
-            }
-        });
+        SwingUtilities.invokeLater(TimeCalculator::new);
     }
 }
